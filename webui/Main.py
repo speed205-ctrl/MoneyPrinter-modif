@@ -974,6 +974,20 @@ def _set_stable_widget_value(key, value):
         st.session_state[localized_widget_key(key)] = value
 
 
+def _apply_recommended_voice(voice_name: str, voice_rate: float):
+    """Aplica automáticamente la voz y tasa recomendadas en los widgets de configuración de audio."""
+    if not voice_name or voice.is_no_voice(voice_name):
+        return
+    tts_server = _infer_tts_server_from_voice(voice_name)
+    _set_stable_widget_value("voice_mode_control", VOICE_MODE_TTS)
+    if tts_server != voice.NO_VOICE_NAME:
+        _set_stable_widget_value("tts_server_select", tts_server)
+        _set_stable_widget_value(f"speech_synthesis_select_{tts_server}", voice_name)
+    _set_stable_widget_value("voice_rate_select", float(voice_rate))
+    _set_runtime_config("app", "voice_name", voice_name)
+    _set_runtime_config("app", "voice_rate", float(voice_rate))
+
+
 def _apply_pending_task_restore():
     payload = st.session_state.pop("task_restore_payload", None)
     if not payload:
@@ -2374,6 +2388,13 @@ def _render_script_settings(panel, params):
                         else:
                             st.session_state["video_script"] = script
                             st.session_state["video_terms"] = ", ".join(terms)
+                            rec_auto = voice.get_voice_recommendation(
+                                video_subject=params.video_subject,
+                                script=script,
+                                language=params.video_language,
+                            )
+                            if rec_auto:
+                                _apply_recommended_voice(rec_auto["voice_name"], rec_auto["recommended_rate"])
             if params.video_subject or params.video_script:
                 director = ScriptDirectorAgent(default_language=params.video_language)
                 metrics = director.analyze_script(params.video_script or "")
@@ -2412,6 +2433,15 @@ def _render_script_settings(panel, params):
                         f"💡 **Voz Recomendada por IA ({rec['category']}):** "
                         f"**`{rec['voice_name']}`** *(Velocidad: {rec['recommended_rate']}x)*\n\n"
                         f"*{rec['reason']}*"
+                    )
+                    def _do_apply_rec(v_name=rec['voice_name'], v_rate=rec['recommended_rate']):
+                        _apply_recommended_voice(v_name, v_rate)
+
+                    st.button(
+                        f"👉 Aplicar {rec['voice_name']} ({rec['recommended_rate']}x) en Configuración de Audio",
+                        key="apply_recommended_voice_btn",
+                        on_click=_do_apply_rec,
+                        use_container_width=True,
                     )
             if st.button(
                 tr("Generate Video Keywords"),
