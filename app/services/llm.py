@@ -41,6 +41,7 @@ Generate a script for a video, depending on the subject of the video.
 6. do not include "voiceover", "narrator" or similar indicators of what should be spoken at the beginning of each paragraph or line.
 8. respond in the same language as the video subject.
 9. ensure each sentence ends with proper punctuation (. , ... ? !). Use commas for short natural breaths and ellipsis (...) or periods (.) for dramatic pauses in speech narration.
+10. PERFECT GRAMMAR AND ZERO TYPOS: Ensure 100% correct spelling, accurate accentuation (tildes), flawless grammar, and zero orthographic typos in the target language (e.g., "respondas" NOT "respondsas", "misterio" NOT "misterioo"). Thoroughly review and self-correct all text before outputting.
 """.strip()
 
 

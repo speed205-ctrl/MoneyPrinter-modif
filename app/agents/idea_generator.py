@@ -40,6 +40,7 @@ Return ONLY a valid JSON list of objects with "title" and "hook" keys. Example:
 ## Rules:
 1. Return ONLY raw JSON list, no markdown wrapper, no extra text.
 2. The language MUST be: {target_lang}.
+3. PERFECT GRAMMAR AND ZERO TYPOS: Ensure 100% correct spelling, accurate accentuation (tildes), flawless grammar, and zero orthographic typos in the target language (e.g., "respondas" NOT "respondsas", "misterio" NOT "misterioo"). Thoroughly review and self-correct all titles and hooks before outputting.
 """.strip()
 
         response = llm._generate_response(prompt=prompt, app_config=app_config)
