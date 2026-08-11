@@ -2395,12 +2395,13 @@ def _render_script_settings(panel, params):
                             )
                             if rec_auto:
                                 _apply_recommended_voice(rec_auto["voice_name"], rec_auto["recommended_rate"])
-            if params.video_subject or params.video_script:
+            current_script = (st.session_state.get("video_script") or params.video_script or "").strip()
+            if params.video_subject or current_script:
                 director = ScriptDirectorAgent(default_language=params.video_language)
-                metrics = director.analyze_script(params.video_script or "")
+                metrics = director.analyze_script(current_script, voice_rate=params.voice_rate)
                 rec = voice.get_voice_recommendation(
                     video_subject=params.video_subject,
-                    script=params.video_script,
+                    script=current_script,
                     language=params.video_language,
                 )
                 if rec:
@@ -2422,10 +2423,11 @@ def _render_script_settings(panel, params):
                 height=180,
                 key="video_script",
             )
-            if params.video_subject or params.video_script:
+            current_script = (params.video_script or st.session_state.get("video_script") or "").strip()
+            if params.video_subject or current_script:
                 rec = voice.get_voice_recommendation(
                     video_subject=params.video_subject,
-                    script=params.video_script,
+                    script=current_script,
                     language=params.video_language,
                 )
                 if rec:
