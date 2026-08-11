@@ -33,7 +33,7 @@ DEFAULT_SCRIPT_SYSTEM_PROMPT = """
 Generate a script for a video, depending on the subject of the video.
 
 ## Constrains:
-1. the script is to be returned as a string with the specified number of paragraphs.
+1. STRICT PARAGRAPH STRUCTURE: Return the script separated into EXACTLY the requested number of paragraphs. Separate each paragraph with double line breaks (\n\n). Do NOT merge all sentences into a single continuous block.
 2. do not under any circumstance reference this prompt in your response.
 3. get straight to the point, don't start with unnecessary things like, "welcome to this video".
 4. you must not include any type of markdown or formatting in the script, never use a title.
@@ -591,6 +591,40 @@ def _fix_spanish_punctuation_and_typos(text: str) -> str:
     return "\n\n".join(fixed_paragraphs)
 
 
+def _enforce_paragraph_structure(text: str, target_paragraphs: int) -> str:
+    """
+    Garantiza que el guion tenga exactamente el número de párrafos solicitados.
+    Si el LLM devuelve todo el texto unido en 1 solo bloque, divide inteligentemente
+    las oraciones en N párrafos separados por dos saltos de línea (\n\n).
+    """
+    if not text or target_paragraphs <= 1:
+        return text.strip()
+
+    raw_paragraphs = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+
+    if len(raw_paragraphs) >= target_paragraphs:
+        return "\n\n".join(raw_paragraphs)
+
+    all_sentences = []
+    for p in raw_paragraphs:
+        sentences = re.split(r"(?<=[.!?…])\s+", p)
+        for s in sentences:
+            s_clean = s.strip()
+            if s_clean:
+                all_sentences.append(s_clean)
+
+    if len(all_sentences) <= target_paragraphs:
+        return "\n\n".join(all_sentences)
+
+    chunk_size = math.ceil(len(all_sentences) / target_paragraphs)
+    paragraphs = []
+    for i in range(0, len(all_sentences), chunk_size):
+        chunk = all_sentences[i : i + chunk_size]
+        paragraphs.append(" ".join(chunk))
+
+    return "\n\n".join(paragraphs)
+
+
 def generate_script(
     video_subject: str,
     language: str = "",
@@ -634,10 +668,10 @@ def generate_script(
         # Apply automatic Spanish typo & punctuation post-processor
         response = _fix_spanish_punctuation_and_typos(response)
 
-        # Split the script into paragraphs
-        paragraphs = response.split("\n\n")
+        # Enforce exact paragraph structure with double line breaks (\n\n)
+        response = _enforce_paragraph_structure(response, paragraph_number)
 
-        return "\n\n".join(paragraphs)
+        return response
 
     for i in range(_max_retries):
         try:

@@ -59,6 +59,12 @@ class TestScriptPromptOptions(unittest.TestCase):
         self.assertNotIn("视频", fixed)
         self.assertIn("¿Por qué", fixed)
 
+    def test_enforce_paragraph_structure(self):
+        wall_of_text = "Primera oración aquí. Segunda oración importante. Tercera oración adicional. Cuarta oración del texto. Quinta oración misteriosa. Sexta oración final."
+        structured = llm._enforce_paragraph_structure(wall_of_text, target_paragraphs=3)
+        paragraphs = structured.split("\n\n")
+        self.assertEqual(len(paragraphs), 3)
+
     def test_normalize_text_response_removes_unclosed_think_block(self):
         """
         某些网关可能因为截断只返回未闭合的 `<think>`。这种内容同样不能
