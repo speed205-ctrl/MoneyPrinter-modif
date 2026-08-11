@@ -503,6 +503,8 @@ def build_script_prompt(
 # Initialization:
 - video subject: {video_subject}
 - number of paragraphs: {paragraph_number}
+11. STRICT MONOLINGUAL TARGET LANGUAGE: The entire script MUST be written 100% in the target language (e.g., Spanish). NEVER slip in English words or Anglicisms (e.g., use "precisamente" NEVER "precisely", "realmente" NEVER "actually"). In Spanish, always use proper opening question marks (¿) and exclamation marks (¡).
+12. ZERO CHINESE CHARACTERS OR PUNCTUATION: Under no circumstances output Chinese characters (e.g., 视频, 短视频, 脚本) or Chinese punctuation marks. Use standard target language vocabulary ("video", "guion", etc.).
 """.rstrip()
     if language:
         prompt += f"\n- language: {language}"
@@ -527,6 +529,28 @@ COMMON_SPANISH_ANGLICISM_REPLACEMENTS = [
     (r"\bDefinitely\b", "Definitivamente"),
     (r"\bsecretly\b", "secretamente"),
     (r"\bSecretly\b", "Secretamente"),
+    # Fugas comunes de vocabulario chino a guiones en español/inglés
+    (r"视频", "video"),
+    (r"短视频", "video corto"),
+    (r"文案", "guion"),
+    (r"脚本", "guion"),
+    (r"图片", "imagen"),
+    (r"字幕", "subtítulos"),
+]
+
+CHINESE_PUNCTUATION_REPLACEMENTS = [
+    ("，", ", "),
+    ("。", ". "),
+    ("？", "?"),
+    ("！", "!"),
+    ("：", ": "),
+    ("；", "; "),
+    ("（", "("),
+    ("）", ")"),
+    ("“", '"'),
+    ("”", '"'),
+    ("‘", "'"),
+    ("’", "'"),
 ]
 
 
@@ -534,13 +558,21 @@ def _fix_spanish_punctuation_and_typos(text: str) -> str:
     """
     Saneamiento y corrección automática de guiones en español:
     1. Reemplaza spanglish / anglicismos comunes no deseados ('precisely' -> 'precisamente').
-    2. Agrega signo de interrogación de apertura '¿' si la frase termina en '?' y carece de '¿'.
+    2. Traduce y elimina fugas de caracteres o puntuación china ('视频' -> 'video').
+    3. Agrega signo de interrogación de apertura '¿' si la frase termina en '?' y carece de '¿'.
     """
     if not text:
         return text
 
     for pattern, replacement in COMMON_SPANISH_ANGLICISM_REPLACEMENTS:
         text = re.sub(pattern, replacement, text)
+
+    for ch_punc, target_punc in CHINESE_PUNCTUATION_REPLACEMENTS:
+        text = text.replace(ch_punc, target_punc)
+
+    # Elimina cualquier carácter CJK aislado restante en guiones
+    text = re.sub(r"[\u4e00-\u9fff\u3400-\u4dbf]", "", text)
+    text = re.sub(r" {2,}", " ", text)
 
     paragraphs = text.split("\n\n")
     fixed_paragraphs = []
@@ -551,6 +583,8 @@ def _fix_spanish_punctuation_and_typos(text: str) -> str:
             s_strip = s.strip()
             if s_strip.endswith("?") and not s_strip.startswith("¿"):
                 s = "¿" + s
+            elif s_strip.endswith("!") and not s_strip.startswith("¡"):
+                s = "¡" + s
             fixed_sentences.append(s)
         fixed_paragraphs.append(" ".join(fixed_sentences))
 

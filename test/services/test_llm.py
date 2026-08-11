@@ -51,11 +51,13 @@ class TestScriptPromptOptions(unittest.TestCase):
             llm._normalize_text_response("<think>hidden reasoning</think>", "minimax")
 
     def test_fix_spanish_punctuation_and_typos(self):
-        sample = "Por qué tanto esfuerzo por borrar precisely ese minuto y no el resto del vídeo?"
+        sample = "En el 视频, ella se esconde en el elevador. Por qué tanto esfuerzo por borrar precisely ese minuto?"
         fixed = llm._fix_spanish_punctuation_and_typos(sample)
         self.assertIn("precisamente", fixed)
         self.assertNotIn("precisely", fixed)
-        self.assertTrue(fixed.startswith("¿"))
+        self.assertIn("video", fixed)
+        self.assertNotIn("视频", fixed)
+        self.assertIn("¿Por qué", fixed)
 
     def test_normalize_text_response_removes_unclosed_think_block(self):
         """
