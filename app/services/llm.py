@@ -42,6 +42,7 @@ Generate a script for a video, depending on the subject of the video.
 8. respond in the same language as the video subject.
 9. ensure each sentence ends with proper punctuation (. , ... ? !). Use commas for short natural breaths and ellipsis (...) or periods (.) for dramatic pauses in speech narration.
 10. PERFECT GRAMMAR AND ZERO TYPOS: Ensure 100% correct spelling, accurate accentuation (tildes), flawless grammar, and zero orthographic typos in the target language (e.g., "respondas" NOT "respondsas", "misterio" NOT "misterioo"). Thoroughly review and self-correct all text before outputting.
+11. STRICT MONOLINGUAL TARGET LANGUAGE: The entire script MUST be written 100% in the target language (e.g., Spanish). NEVER slip in English words or Anglicisms (e.g., use "precisamente" NEVER "precisely", "realmente" NEVER "actually"). In Spanish, always use proper opening question marks (¿) and exclamation marks (¡).
 """.strip()
 
 
@@ -515,6 +516,47 @@ def build_script_prompt(
     return prompt
 
 
+COMMON_SPANISH_ANGLICISM_REPLACEMENTS = [
+    (r"\bprecisely\b", "precisamente"),
+    (r"\bPrecisely\b", "Precisamente"),
+    (r"\bactually\b", "en realidad"),
+    (r"\bActually\b", "En realidad"),
+    (r"\bobviously\b", "obviamente"),
+    (r"\bObviously\b", "Obviamente"),
+    (r"\bdefinitely\b", "definitivamente"),
+    (r"\bDefinitely\b", "Definitivamente"),
+    (r"\bsecretly\b", "secretamente"),
+    (r"\bSecretly\b", "Secretamente"),
+]
+
+
+def _fix_spanish_punctuation_and_typos(text: str) -> str:
+    """
+    Saneamiento y corrección automática de guiones en español:
+    1. Reemplaza spanglish / anglicismos comunes no deseados ('precisely' -> 'precisamente').
+    2. Agrega signo de interrogación de apertura '¿' si la frase termina en '?' y carece de '¿'.
+    """
+    if not text:
+        return text
+
+    for pattern, replacement in COMMON_SPANISH_ANGLICISM_REPLACEMENTS:
+        text = re.sub(pattern, replacement, text)
+
+    paragraphs = text.split("\n\n")
+    fixed_paragraphs = []
+    for p in paragraphs:
+        sentences = re.split(r"(?<=[.!?…])\s+", p)
+        fixed_sentences = []
+        for s in sentences:
+            s_strip = s.strip()
+            if s_strip.endswith("?") and not s_strip.startswith("¿"):
+                s = "¿" + s
+            fixed_sentences.append(s)
+        fixed_paragraphs.append(" ".join(fixed_sentences))
+
+    return "\n\n".join(fixed_paragraphs)
+
+
 def generate_script(
     video_subject: str,
     language: str = "",
@@ -555,13 +597,12 @@ def generate_script(
         response = re.sub(r"\[.*\]", "", response)
         response = re.sub(r"\(.*\)", "", response)
 
+        # Apply automatic Spanish typo & punctuation post-processor
+        response = _fix_spanish_punctuation_and_typos(response)
+
         # Split the script into paragraphs
         paragraphs = response.split("\n\n")
 
-        # Select the specified number of paragraphs
-        # selected_paragraphs = paragraphs[:paragraph_number]
-
-        # Join the selected paragraphs into a single string
         return "\n\n".join(paragraphs)
 
     for i in range(_max_retries):

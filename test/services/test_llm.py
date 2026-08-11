@@ -50,6 +50,13 @@ class TestScriptPromptOptions(unittest.TestCase):
         with self.assertRaises(ValueError):
             llm._normalize_text_response("<think>hidden reasoning</think>", "minimax")
 
+    def test_fix_spanish_punctuation_and_typos(self):
+        sample = "Por qué tanto esfuerzo por borrar precisely ese minuto y no el resto del vídeo?"
+        fixed = llm._fix_spanish_punctuation_and_typos(sample)
+        self.assertIn("precisamente", fixed)
+        self.assertNotIn("precisely", fixed)
+        self.assertTrue(fixed.startswith("¿"))
+
     def test_normalize_text_response_removes_unclosed_think_block(self):
         """
         某些网关可能因为截断只返回未闭合的 `<think>`。这种内容同样不能
