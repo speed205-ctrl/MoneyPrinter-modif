@@ -1,0 +1,17 @@
+# Environments & local configs
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+config.toml
+storage/
+.env
+
+# Local reports
+mantenimiento_log.txt
+reporte_bateria.html
+reporte_energia.html
+*.log
