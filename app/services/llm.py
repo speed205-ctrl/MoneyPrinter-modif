@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import re
 from time import perf_counter
 from typing import List
@@ -554,9 +555,9 @@ CHINESE_PUNCTUATION_REPLACEMENTS = [
 ]
 
 
-def _fix_spanish_punctuation_and_typos(text: str) -> str:
+def _fix_spanish_punctuation_and_typos(text: str, language: str = "") -> str:
     """
-    Saneamiento y corrección automática de guiones en español:
+    Saneamiento y corrección automática de guiones en español / inglés:
     1. Reemplaza spanglish / anglicismos comunes no deseados ('precisely' -> 'precisamente').
     2. Traduce y elimina fugas de caracteres o puntuación china ('视频' -> 'video').
     3. Agrega signo de interrogación de apertura '¿' si la frase termina en '?' y carece de '¿'.
@@ -567,11 +568,11 @@ def _fix_spanish_punctuation_and_typos(text: str) -> str:
     for pattern, replacement in COMMON_SPANISH_ANGLICISM_REPLACEMENTS:
         text = re.sub(pattern, replacement, text)
 
-    for ch_punc, target_punc in CHINESE_PUNCTUATION_REPLACEMENTS:
-        text = text.replace(ch_punc, target_punc)
+    is_chinese = any(zh in str(language).lower() for zh in ["zh", "chinese"])
+    if not is_chinese:
+        for ch_punc, target_punc in CHINESE_PUNCTUATION_REPLACEMENTS:
+            text = text.replace(ch_punc, target_punc)
 
-    # Elimina cualquier carácter CJK aislado restante en guiones
-    text = re.sub(r"[\u4e00-\u9fff\u3400-\u4dbf]", "", text)
     text = re.sub(r" {2,}", " ", text)
 
     paragraphs = text.split("\n\n")
@@ -666,7 +667,7 @@ def generate_script(
         response = re.sub(r"\(.*\)", "", response)
 
         # Apply automatic Spanish typo & punctuation post-processor
-        response = _fix_spanish_punctuation_and_typos(response)
+        response = _fix_spanish_punctuation_and_typos(response, language=language)
 
         # Enforce exact paragraph structure with double line breaks (\n\n)
         response = _enforce_paragraph_structure(response, paragraph_number)
