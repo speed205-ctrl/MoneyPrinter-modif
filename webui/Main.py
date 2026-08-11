@@ -976,24 +976,63 @@ def _set_stable_widget_value(key, value):
         st.session_state[key] = value
 
 
+def _resolve_exact_voice_name(voice_name: str, tts_server: str) -> str:
+    if not voice_name or voice.is_no_voice(voice_name):
+        return voice_name
+
+    available = []
+    if tts_server == "siliconflow":
+        available = voice.get_siliconflow_voices()
+    elif tts_server == "gemini-tts":
+        available = voice.get_gemini_voices()
+    elif tts_server == "mimo-tts":
+        available = voice.get_mimo_voices()
+    elif tts_server == "elevenlabs":
+        api_key = st.session_state.get(
+            "elevenlabs_api_key_input", config.elevenlabs.get("api_key", "")
+        )
+        available = voice.get_elevenlabs_voices(api_key)
+    elif tts_server == "chatterbox":
+        available = voice.get_chatterbox_voices()
+    else:
+        all_azure = voice.get_all_azure_voices()
+        if tts_server == "azure-tts-v2":
+            available = [v for v in all_azure if "V2" in v]
+        else:
+            available = [v for v in all_azure if "V2" not in v]
+
+    if voice_name in available:
+        return voice_name
+
+    parsed_target = voice.parse_voice_name(voice_name).lower()
+    for v in available:
+        if v == voice_name or v.startswith(voice_name):
+            return v
+        if voice.parse_voice_name(v).lower() == parsed_target:
+            return v
+
+    return voice_name
+
+
 def _apply_recommended_voice(voice_name: str, voice_rate: float):
     """Aplica automáticamente la voz y tasa recomendadas en los widgets de configuración de audio."""
     if not voice_name or voice.is_no_voice(voice_name):
         return
     tts_server = _infer_tts_server_from_voice(voice_name)
+    exact_voice = _resolve_exact_voice_name(voice_name, tts_server)
     _set_stable_widget_value("voice_mode_control", VOICE_MODE_TTS)
     _set_runtime_config("ui", "voice_mode", VOICE_MODE_TTS)
     if tts_server != voice.NO_VOICE_NAME:
         _set_stable_widget_value("tts_server_select", tts_server)
         _set_runtime_config("ui", "tts_server", tts_server)
-        _set_stable_widget_value(f"speech_synthesis_select_{tts_server}", voice_name)
-        st.session_state[f"speech_synthesis_select_{tts_server}"] = voice_name
+        _set_stable_widget_value(f"speech_synthesis_select_{tts_server}", exact_voice)
+        st.session_state[f"speech_synthesis_select_{tts_server}"] = exact_voice
     _set_stable_widget_value("voice_rate_select", float(voice_rate))
-    _set_runtime_config("ui", "voice_name", voice_name)
+    _set_runtime_config("ui", "voice_name", exact_voice)
     _set_runtime_config("ui", "voice_rate", float(voice_rate))
-    _set_runtime_config("app", "voice_name", voice_name)
+    _set_runtime_config("app", "voice_name", exact_voice)
     _set_runtime_config("app", "voice_rate", float(voice_rate))
-    st.toast(f"¡Voz '{voice_name}' ({voice_rate}x) aplicada!")
+    st.toast(f"¡Voz '{exact_voice}' ({voice_rate}x) aplicada!")
 
 
 def _apply_pending_task_restore():
