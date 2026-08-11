@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from app.agents import ScriptDirector, MaterialCurator, RenderManager
 from app.agents.script_director import ScriptDirectorAgent
 from app.agents.material_curator import MaterialCuratorAgent
@@ -14,11 +15,13 @@ class TestAgents(unittest.TestCase):
         self.assertEqual(metrics["voice_rate"], 0.88)
         self.assertIn("0:", metrics["estimated_time_formatted"])
 
-    def test_material_curator_parallel_search(self):
+    @patch("app.services.llm.generate_terms")
+    def test_material_curator_parallel_search(self, mock_generate_terms):
+        mock_generate_terms.return_value = ["terror", "misterio", "oscuridad"]
         agent = MaterialCurator(max_workers=2)
         result = agent.curate_materials_for_script("Terror", "Una historia sobre apariciones", amount=3, aspect_ratio="9:16")
         self.assertEqual(result["aspect_ratio"], "9:16")
-        self.assertEqual(result["count"], len(result["keywords"]))
+        self.assertEqual(result["count"], 3)
 
     def test_render_manager_gpu_and_bgm_attenuation(self):
         agent = RenderManager(bgm_attenuation_db=-20.0)
