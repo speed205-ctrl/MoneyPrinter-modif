@@ -971,7 +971,9 @@ def _infer_tts_server_from_voice(voice_name):
 
 def _set_stable_widget_value(key, value):
     if value is not None:
-        st.session_state[localized_widget_key(key)] = value
+        loc_key = localized_widget_key(key)
+        st.session_state[loc_key] = value
+        st.session_state[key] = value
 
 
 def _apply_recommended_voice(voice_name: str, voice_rate: float):
@@ -980,12 +982,18 @@ def _apply_recommended_voice(voice_name: str, voice_rate: float):
         return
     tts_server = _infer_tts_server_from_voice(voice_name)
     _set_stable_widget_value("voice_mode_control", VOICE_MODE_TTS)
+    _set_runtime_config("ui", "voice_mode", VOICE_MODE_TTS)
     if tts_server != voice.NO_VOICE_NAME:
         _set_stable_widget_value("tts_server_select", tts_server)
+        _set_runtime_config("ui", "tts_server", tts_server)
         _set_stable_widget_value(f"speech_synthesis_select_{tts_server}", voice_name)
+        st.session_state[f"speech_synthesis_select_{tts_server}"] = voice_name
     _set_stable_widget_value("voice_rate_select", float(voice_rate))
+    _set_runtime_config("ui", "voice_name", voice_name)
+    _set_runtime_config("ui", "voice_rate", float(voice_rate))
     _set_runtime_config("app", "voice_name", voice_name)
     _set_runtime_config("app", "voice_rate", float(voice_rate))
+    st.toast(f"¡Voz '{voice_name}' ({voice_rate}x) aplicada!")
 
 
 def _apply_pending_task_restore():
