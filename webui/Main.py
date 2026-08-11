@@ -2456,7 +2456,9 @@ def _render_script_settings(panel, params):
                         f"""
                         <div class="mpt-script-studio-header">
                             <span class="mpt-badge mpt-badge-cat">🏷️ {rec.get('category', 'General')}</span>
-                            <span class="mpt-badge mpt-badge-voice">🎤 {rec.get('voice_name', 'Default')} ({rec.get('recommended_rate', 1.0)}x)</span>
+                            <span class="mpt-badge mpt-badge-voice" style="background: rgba(16, 185, 129, 0.18); border: 1px solid rgba(16, 185, 129, 0.4); color: #34d399; cursor: help;" title="Voz Sugerida por IA: {rec.get('voice_name')} ({rec.get('recommended_rate', 1.0)}x) - {rec.get('reason')}">
+                                🟢 Voz Recomendada: {rec.get('voice_name')} ({rec.get('recommended_rate', 1.0)}x)
+                            </span>
                             <span class="mpt-badge mpt-badge-time">⏱️ {metrics['estimated_time_formatted']} est.</span>
                             <span class="mpt-badge mpt-badge-words">📊 {metrics['word_count']} palabras</span>
                         </div>
@@ -2470,28 +2472,6 @@ def _render_script_settings(panel, params):
                 height=180,
                 key="video_script",
             )
-            current_script = (params.video_script or st.session_state.get("video_script") or "").strip()
-            if params.video_subject or current_script:
-                rec = voice.get_voice_recommendation(
-                    video_subject=params.video_subject,
-                    script=current_script,
-                    language=params.video_language,
-                )
-                if rec:
-                    st.info(
-                        f"💡 **Voz Recomendada por IA ({rec['category']}):** "
-                        f"**`{rec['voice_name']}`** *(Velocidad: {rec['recommended_rate']}x)*\n\n"
-                        f"*{rec['reason']}*"
-                    )
-                    def _do_apply_rec(v_name=rec['voice_name'], v_rate=rec['recommended_rate']):
-                        _apply_recommended_voice(v_name, v_rate)
-
-                    st.button(
-                        f"👉 Aplicar {rec['voice_name']} ({rec['recommended_rate']}x) en Configuración de Audio",
-                        key="apply_recommended_voice_btn",
-                        on_click=_do_apply_rec,
-                        use_container_width=True,
-                    )
             if st.button(
                 tr("Generate Video Keywords"),
                 key="auto_generate_terms",
@@ -3422,6 +3402,15 @@ def _render_audio_settings(panel, params):
                             f"💡 **Recomendación de Voz de IA para {rec['category']}:** "
                             f"**`{rec['voice_name']}`** *(Velocidad recomendada: {rec['recommended_rate']}x)*\n\n"
                             f"*{rec['reason']}*"
+                        )
+                        def _do_apply_rec_audio(v_name=rec['voice_name'], v_rate=rec['recommended_rate']):
+                            _apply_recommended_voice(v_name, v_rate)
+
+                        st.button(
+                            f"👉 Aplicar {rec['voice_name']} ({rec['recommended_rate']}x) a la Configuración de Audio",
+                            key="apply_rec_voice_audio_card_btn",
+                            on_click=_do_apply_rec_audio,
+                            use_container_width=True,
                         )
 
             # 根据选择的TTS服务器获取声音列表
